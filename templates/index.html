@@ -1,0 +1,19 @@
+<html>
+<head>
+<title>Corrections</title>
+</head>
+<body>
+<h1>Corrections</h1>
+{% if items %}
+{% for item in items %}
+<a href="{{url_for('item', identifier=item.identifier)}}"><img src="http://www.archive.org/download/{{ item.identifier }}/page/{{item.identifier}}_preview_thumb.jpg" width="100"></a> 
+<a href="{{ url_for('item', identifier=item.identifier) }}">{{ item.identifier }}</a> ({{ item.abbyy_page_count }} pages)<br>
+{% endfor %}
+{% endif %}
+<form action="{{url_for('add_item')}}" method="post">
+<input name="identifier" size="60">
+<input value="add" type="submit">
+</form>
+</body>
+</html>
+</html>

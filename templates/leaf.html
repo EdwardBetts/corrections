@@ -1,0 +1,50 @@
+<html>
+<head>
+<title>Corrections</title>
+</head>
+<body>
+<script>
+function edit_word(word) {
+    alert('edit word:' + word);
+}
+</script>
+
+<div style="position:absolute;top:0px;">
+<a href="{{url_for('leaf', identifier=item.identifier, leaf=leaf-1)}}">&lt;- Prev</a>
+<a href="{{url_for('item', identifier=item.identifier)}}">Index</a>
+<a href="{{url_for('leaf', identifier=item.identifier, leaf=leaf+1)}}">Next -&gt;</a>
+<a href="javascript:edit_word()">edit word</a>
+{{ item }}
+</div>
+
+{% set out_y = 40 %}
+{% set scale = 2 %}
+{% if not item.leaf0_missing %}
+{% set leaf = leaf - 1 %}
+{% endif %}
+{% for t, b, line in lines %}
+    {% set y = t - 20 %}
+    {% set h = (b - t) + 40 %}
+    <img src="http://www.archive.org/download/{{item.identifier}}/page/n{{leaf}}_x{{text_x}}_y{{y}}_h{{h}}_w{{text_w}}_s{{scale}}.jpg" height="{{h/scale}}" width="{{text_w/scale}}" style="position:absolute;top:{{out_y}}px;">
+    <div style="position:absolute;top:{{ out_y + 10 + h/scale}}px;height:{{h/scale}}px;">
+    {% for fmt in line %}
+        <span style="font-size:{{ ((4 * Decimal(fmt.get('fs'))) /scale) - 1 }}pt;{% if fmt.get('italic') == 'true' %}font-style:italic{% endif %}">
+        {% for word in group_words(fmt) %}
+            {% set w = (int(word[-1].get('r')) - int(word[0].get('l'))) / scale %}
+            {% set word_x = int(word[0].get('l')) - text_x %}
+            <span style="position:absolute;left:{{word_x / scale}}px;height:{{(b - t) / 2 }}px;width:{{w}}px;border:red 1px solid;" onclick="edit_word('{%- for c in word -%}{{c.text}}{% endfor %}')">
+            {% for c in word %}
+                {% set char_w = (int(c.get('r')) - int(c.get('l'))) / scale %}
+                <span style="position:absolute;left:{{((int(c.get('l')) - text_x) - word_x) / scale}}px;width:{{char_w}}px">{{c.text}}</span>
+            {% endfor %}
+            </span>
+        {% endfor %}
+        </span>
+    {% endfor %}
+    </div>
+    {% set out_y = out_y + h %}
+
+{% endfor %}
+
+</body>
+</html>
