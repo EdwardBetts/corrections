@@ -8,31 +8,6 @@
 function edit_word(word) {
     alert('edit word:' + word);
 }
-function auto_fit(c) {
-    var px = 8;
-    var width = parseInt(c.parentNode.style.width.replace('px', ''));
-    console.log(px + 'px');
-    console.log('width: ' + width);
-    console.log('c.offsetWidth:' + c.offsetWidth)
-    console.log('');
-    while (c.offsetWidth < width) {
-        console.log('  c.offsetWidth:' + c.offsetWidth)
-        console.log('  width:' + width);
-        console.log('  ' + px + 'px');
-        px++;
-        c.style.fontSize = px + 'px';
-    }
-}
-$(function() {
-    var char_count = 0;
-    $('span.char').each(function(index) {
-        char_count++;
-        if (char_count < 20) {
-            auto_fit(this);
-        }
-    });
-    //console.log('char count:' + char_count);
-});
 </script>
 
 <div style="position:absolute;top:0px;">
