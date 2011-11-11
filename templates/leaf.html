@@ -3,17 +3,29 @@
 <title>Corrections</title>
 </head>
 <body>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.0/jquery.min.js"></script>
 <script>
 function edit_word(word) {
     alert('edit word:' + word);
 }
+function auto_fit(c) {
+    
+
+}
+$(function() {
+    var char_count = 0;
+    $('span.char').each(function(index) {
+        char_count++;
+    });
+    //console.log('char count:' + char_count);
+});
 </script>
 
 <div style="position:absolute;top:0px;">
 <a href="{{url_for('leaf', identifier=item.identifier, leaf=leaf-1)}}">&lt;- Prev</a>
 <a href="{{url_for('item', identifier=item.identifier)}}">Index</a>
 <a href="{{url_for('leaf', identifier=item.identifier, leaf=leaf+1)}}">Next -&gt;</a>
-<a href="javascript:edit_word()">edit word</a>
+<a href="http://www.archive.org/stream/{{item.identifier}}#page/n{{leaf}}/mode/1up">View in book reader</a>
 {{ item }}
 </div>
 
@@ -30,14 +42,16 @@ function edit_word(word) {
     {% for fmt in line %}
         <span style="font-size:{{ ((4 * Decimal(fmt.get('fs'))) /scale) - 1 }}pt;{% if fmt.get('italic') == 'true' %}font-style:italic{% endif %}">
         {% for word in group_words(fmt) %}
-            {% set w = (int(word[-1].get('r')) - int(word[0].get('l'))) / scale %}
-            {% set word_x = int(word[0].get('l')) - text_x %}
-            <span style="position:absolute;left:{{word_x / scale}}px;height:{{(b - t) / 2 }}px;width:{{w}}px;border:red 1px solid;" onclick="edit_word('{%- for c in word -%}{{c.text}}{% endfor %}')">
-            {% for c in word %}
-                {% set char_w = (int(c.get('r')) - int(c.get('l'))) / scale %}
-                <span style="position:absolute;left:{{((int(c.get('l')) - text_x) - word_x) / scale}}px;width:{{char_w}}px">{{c.text}}</span>
-            {% endfor %}
-            </span>
+            {% if word[0].text != ' ' %}
+                {% set w = (int(word[-1].get('r')) - int(word[0].get('l'))) / scale %}
+                {% set word_x = int(word[0].get('l')) - text_x %}
+                <span style="position:absolute;left:{{word_x / scale}}px;height:{{(b - t) / 2 }}px;width:{{w}}px;border:red 1px solid;" onclick="edit_word('{%- for c in word -%}{{c.text}}{% endfor %}')">
+                {% for c in word %}
+                    {% set char_w = (int(c.get('r')) - int(c.get('l'))) / scale %}
+                    <span class="char" style="position:absolute;left:{{((int(c.get('l')) - text_x) - word_x) / scale}}px;width:{{char_w}}px">{{c.text}}</span>
+                {% endfor %}
+                </span>
+            {% endif %}
         {% endfor %}
         </span>
     {% endfor %}
