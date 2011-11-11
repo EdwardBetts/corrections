@@ -9,13 +9,27 @@ function edit_word(word) {
     alert('edit word:' + word);
 }
 function auto_fit(c) {
-    
-
+    var px = 8;
+    var width = parseInt(c.parentNode.style.width.replace('px', ''));
+    console.log(px + 'px');
+    console.log('width: ' + width);
+    console.log('c.offsetWidth:' + c.offsetWidth)
+    console.log('');
+    while (c.offsetWidth < width) {
+        console.log('  c.offsetWidth:' + c.offsetWidth)
+        console.log('  width:' + width);
+        console.log('  ' + px + 'px');
+        px++;
+        c.style.fontSize = px + 'px';
+    }
 }
 $(function() {
     var char_count = 0;
     $('span.char').each(function(index) {
         char_count++;
+        if (char_count < 20) {
+            auto_fit(this);
+        }
     });
     //console.log('char count:' + char_count);
 });
@@ -40,7 +54,7 @@ $(function() {
     <img src="http://www.archive.org/download/{{item.identifier}}/page/n{{leaf}}_x{{text_x}}_y{{y}}_h{{h}}_w{{text_w}}_s{{scale}}.jpg" height="{{h/scale}}" width="{{text_w/scale}}" style="position:absolute;top:{{out_y}}px;">
     <div style="position:absolute;top:{{ out_y + 10 + h/scale}}px;height:{{h/scale}}px;">
     {% for fmt in line %}
-        <span style="font-size:{{ ((4 * Decimal(fmt.get('fs'))) /scale) - 1 }}pt;{% if fmt.get('italic') == 'true' %}font-style:italic{% endif %}">
+        <span style="{% if fmt.get('italic') == 'true' %}font-style:italic{% endif %}">
         {% for word in group_words(fmt) %}
             {% if word[0].text != ' ' %}
                 {% set w = (int(word[-1].get('r')) - int(word[0].get('l'))) / scale %}
@@ -48,7 +62,7 @@ $(function() {
                 <span style="position:absolute;left:{{word_x / scale}}px;height:{{(b - t) / 2 }}px;width:{{w}}px;border:red 1px solid;" onclick="edit_word('{%- for c in word -%}{{c.text}}{% endfor %}')">
                 {% for c in word %}
                     {% set char_w = (int(c.get('r')) - int(c.get('l'))) / scale %}
-                    <span class="char" style="position:absolute;left:{{((int(c.get('l')) - text_x) - word_x) / scale}}px;width:{{char_w}}px">{{c.text}}</span>
+                    <span style="position:absolute;left:{{((int(c.get('l')) - text_x) - word_x) / scale}}px;width:{{char_w}}px"><span class="char">{{c.text}}</span></span>
                 {% endfor %}
                 </span>
             {% endif %}
