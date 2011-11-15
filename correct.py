@@ -170,19 +170,9 @@ def item(identifier):
     item=get_item(identifier)
     return render_template('item.html', item=item, int=int)
 
-@app.route("/save/<identifier>/<int:page_num>", methods=['POST'])
-def save(identifier, page_num):
-    page = get_page(identifier, page_num)
-    edits = defaultdict(lambda: defaultdict(unicode))
-    for k, replacement in request.form.iteritems():
-        if not k.startswith('word_'):
-            continue
-        line, char = map(int, k.split('_')[1:])
-        edits[line][char] = replacement
-
+def match_edits_to_page(edits, page):
     abbyy = get_page_lines(page)
 
-    print (identifier, page_num)
     to_save = []
     for line_num, (l, b, line) in enumerate(abbyy['lines']):
         if line_num not in edits:
@@ -206,11 +196,29 @@ def save(identifier, page_num):
                     'r': word[-1].get('r'),
                     'b': line.get('b'),
                 })
+    return to_save
+
+@app.route("/save/<identifier>/<int:page_num>", methods=['POST'])
+def save(identifier, page_num):
+    page = get_page(identifier, page_num)
+    edits = defaultdict(lambda: defaultdict(unicode))
+    for k, replacement in request.form.iteritems():
+        if not k.startswith('word_'):
+            continue
+        line, char = map(int, k.split('_')[1:])
+        edits[line][char] = replacement
+
+    to_save = match_edits_to_page(edits, page)
+    if not to_save:
+        return ''
 
     cur = g.db.cursor(MySQLdb.cursors.DictCursor)
+    cur.execute('insert into changesets (user_id, identifier, page, created) values (%s, %s, %s, now())', [session['user_id'], identifier, page_num])
+    changeset_id = g.db.insert_id()
+
     for edit in to_save:
         keys = ','.join(edit.keys())
-        cur.execute('insert into edits (user_id, identifier, page, %s) values (%s)' % (keys, ','.join(['%s'] * (3 + len(edit)))), [session['user_id'], identifier, page_num] + edit.values())
+        cur.execute('insert into edits (changeset, %s) values (%s)' % (keys, ','.join(['%s'] * (1 + len(edit)))), [changeset_id] + edit.values())
     return ''
 
 ns = '{http://www.abbyy.com/FineReader_xml/FineReader6-schema-v1.xml}'
