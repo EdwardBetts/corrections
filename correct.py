@@ -113,6 +113,22 @@ def index(error=None):
     items = cur.fetchall()
     return render_template('index.html', items=items)
 
+@app.route('/changeset/<changeset_id>')
+def view_changeset(changeset_id):
+    cur = g.db.cursor(MySQLdb.cursors.DictCursor)
+    cur.execute('select * from changesets where id=%s', [changeset_id])
+    changeset = cur.fetchrow()
+    cur.execute('select * from edits where changeset=%s', [changeset_id])
+    edits = cur.fetchall()
+    return render_template('changeset.html', changeset=changeset, edits=edits)
+
+@app.route("/user/<username>")
+def user(username):
+    cur = g.db.cursor(MySQLdb.cursors.DictCursor)
+    cur.execute('select changesets.id, identifier, page, created from changesets, users where user_id=users.id and username=%s order by created', [username])
+    changesets = cur.fetchall()
+    return render_template('user.html', changesets=changesets)
+
 def get_page(identifier, leaf_num):
     host, path = locate(identifier)
     url = 'http://%s/~edward/get_leaf.php?item_id=%s&doc=%s&path=%s&leaf=%d' % (host, identifier, identifier, path, leaf_num)

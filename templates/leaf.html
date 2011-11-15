@@ -38,8 +38,9 @@ function saveEdits () {
 </script>
 
 <div style="position:absolute;top:0px;">
+<a href="{{ url_for('index') }}">home</a> |
 <a href="{{url_for('leaf', identifier=item.identifier, leaf_num=leaf-1)}}">&lt;- Prev</a>
-<a href="{{url_for('item', identifier=item.identifier)}}">Index</a>
+<a href="{{url_for('item', identifier=item.identifier)}}">page viewer</a>
 <a href="{{url_for('leaf', identifier=item.identifier, leaf_num=leaf+1)}}">Next -&gt;</a>
 <a href="http://www.archive.org/stream/{{item.identifier}}#page/n{{leaf}}/mode/1up">View in book reader</a>
 <button type="button" id="saveButton" onclick="saveEdits()" disabled="disabled">Save</button>

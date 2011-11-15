@@ -43,7 +43,7 @@ function do_login() {
 </style>
 
 {% if 'username' in session %}
-{{ session.username }} (<a href="{{url_for('logout')}}">logout</a>)<br>
+<a href="{{ url_for('user', username=session.username) }}">{{ session.username }}</a> (<a href="{{url_for('logout')}}">logout</a>)<br>
 {% else %}
 <a href="javascript:show_login()">Login</a><br>
 <div id="login">
