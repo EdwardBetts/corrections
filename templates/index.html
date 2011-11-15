@@ -2,66 +2,11 @@
 <head>
 <title>Corrections</title>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.0/jquery.min.js"></script>
-<script>
-var cur_site;
-
-function show_login() {
-    $("#login").toggle()
-}
-
-function do_login() {
-    alert("do login: " + cur_site);
-}
-
-function use_account(site) {
-    cur_site = site;
-    $("#login_form").show()
-    if (site == 'ol') {
-        $("#ol_text").show()
-        $("#ol_link").hide()
-        $("#ia_text").hide()
-        $("#ia_link").show()
-    }
-    if (site == 'ia') {
-        $("#ol_text").hide()
-        $("#ol_link").show()
-        $("#ia_text").show()
-        $("#ia_link").hide()
-    }
-}
-</script>
-<style>
-#login {
-    display:none;
-    position:absolute;border:1px black solid;
-    background: white;
-    height: 200px;
-    width: 300px;
-}
-#ol_text { display:none; font-weight: bold; }
-#ia_text { display:none; font-weight: bold; }
-</style>
-    
+   
 </head>
 <body>
 <h1>Corrections</h1>
-<a href="javascript:show_login()">Login</a>
-<div id="login">
-<a id="ol_link" href="javascript:use_account('ol')">Open Library</a>
-<span id="ol_text">Open Library</span>
-<a id="ia_link" href="javascript:use_account('ia')">Internet Archive</a>
-<span id="ia_text">Internet Archive</span>
-<div id="login_form" style="display:none">
-<form onsubmit="do_login();">
-Username<br>
-<input name="username"><br>
-Password<br>
-<input name="password" type="password"><br>
-<input type="submit" value="Login">
-</form>
-</div>
-</div>
-</div>
+{% include 'account.html' %}
 {% if items %}
 <table>
 {% set col = 0 %}

@@ -1,0 +1,60 @@
+<script>
+var cur_site;
+
+function show_login() {
+    $("#login").toggle()
+}
+
+function do_login() {
+    userpass = {
+        username: $("input[name=username]").val(),
+        password: $("input[name=password]").val()
+    };
+
+    $.ajax({
+        url: '{{ url_for('do_login') }}',
+        data: userpass,
+        type: 'POST',
+        success: function(data) {
+            if (data.indexOf('good') != -1) {
+                window.location.reload();
+            }
+            if (data.indexOf('bad') != -1) {
+                $("#login_error").show()
+            }
+        },
+    });
+    return false;
+}
+
+</script>
+<style>
+#login {
+    display:none;
+    position:absolute;
+    border:1px black solid;
+    background: white;
+    z-index: 4;
+}
+#login_error {
+    display:none;
+    color:red;
+}
+</style>
+
+{% if 'username' in session %}
+{{ session.username }} (<a href="{{url_for('logout')}}">logout</a>)<br>
+{% else %}
+<a href="javascript:show_login()">Login</a><br>
+<div id="login">
+<span id="login_error">Login error, try again</span><br>
+<form action="#" onsubmit="do_login(); return false;">
+Username<br>
+<input name="username"><br>
+Password<br>
+<input name="password" type="password"><br>
+<input type="submit" value="Login">
+</form>
+</div>
+{% endif %}
+

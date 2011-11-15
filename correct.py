@@ -1,9 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, g, Response
+from flask import Flask, render_template, request, redirect, url_for, g, Response, session
 from lxml import etree
-from urllib import urlopen
-import MySQLdb, urllib, json
+from urllib import urlopen, urlencode
+import MySQLdb, urllib, json, httplib
 from decimal import Decimal
 from pprint import pprint
+from collections import defaultdict
 
 app = Flask(__name__)
 app.debug = True
@@ -23,6 +24,48 @@ def group_words(fmt):
         yield prev
     if cur:
         yield cur
+
+def ol_login(username, password):
+    host = 'openlibrary.org'
+    h1 = httplib.HTTPConnection(host)
+    body = json.dumps({'username': username, 'password': password})
+    headers = {'Content-Type': 'application/json'}
+    h1.request('POST', 'http://' + host + '/account/login', body, headers)
+    res = h1.getresponse()
+    status = res.status
+    h1.close()
+    return status == 200
+
+def ia_login(username, password):
+    host = 'www.archive.org'
+    h1 = httplib.HTTPConnection(host)
+    h1.request('GET', 'http://' + host + '/account/login.php')
+    res = h1.getresponse()
+    res.read()
+
+    assert res.status == 200
+    cookies = res.getheader('set-cookie').split(',')
+    cookie = ';'.join([c.split(';')[0] for c in cookies])
+
+    body = urlencode({
+        'username': username,
+        'password': password,
+        'submit': 'Log in',
+        'referer': '/index.php',
+    })
+    headers = {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Cookie': cookie,
+        'Accept': 'text/html',
+    }
+    h1.request('POST', 'http://' + host + '/account/login.php', body, headers)
+    res = h1.getresponse()
+    status = res.status
+    body = res.read()
+    good_login = 'We will attempt to redirect you now' in body
+    
+    h1.close()
+    return good_login
 
 @app.before_request
 def before_request():
@@ -70,14 +113,12 @@ def index(error=None):
     items = cur.fetchall()
     return render_template('index.html', items=items)
 
-@app.route("/leaf/<identifier>/<int:leaf>")
-def leaf(identifier, leaf):
-    item = get_item(identifier)
+def get_page(identifier, leaf_num):
     host, path = locate(identifier)
-    url = 'http://%s/~edward/get_leaf.php?item_id=%s&doc=%s&path=%s&leaf=%d' % (host, identifier, identifier, path, leaf)
-    print url
-    page = etree.parse(url).getroot()
-    page_w = int(page.get('width'))
+    url = 'http://%s/~edward/get_leaf.php?item_id=%s&doc=%s&path=%s&leaf=%d' % (host, identifier, identifier, path, leaf_num)
+    return etree.parse(url).getroot()
+
+def get_page_lines(page):
     lines = []
     text_l, text_r = None, None
     for block in page:
@@ -101,8 +142,19 @@ def leaf(identifier, leaf):
                     text_r = r
                 lines.append((int(line.get('t')), int(line.get('b')), line))
 
+    return {'lines': lines, 'text_l': text_l, 'text_r': text_r}
+
+@app.route("/leaf/<identifier>/<int:leaf_num>")
+def leaf(identifier, leaf_num):
+    item = get_item(identifier)
+    page = get_page(identifier, leaf_num)
+    page_w = int(page.get('width'))
+    abbyy = get_page_lines(page)
+
+    text_r = abbyy['text_r']
+    text_l = abbyy['text_l']
     text_w = text_r-text_l if (text_r is not None and text_l is not None) else 0
-    return render_template('leaf.html', item=item, leaf=leaf, lines=lines, \
+    return render_template('leaf.html', item=item, leaf=leaf_num, lines=abbyy['lines'], \
             page_w=page_w, int=int, Decimal=Decimal, \
             text_x=text_l, text_w=text_w, group_words=group_words, max=max, len=len)
 
@@ -118,24 +170,88 @@ def item(identifier):
     item=get_item(identifier)
     return render_template('item.html', item=item, int=int)
 
-@app.route("/login")
-def login():
-    return render_template('login.html')
-
-@app.route("/save/<identifier>/<int:page>", methods=['POST'])
-def save(identifier, page):
-    edits = []
-    for k, v in request.form.iteritems():
+@app.route("/save/<identifier>/<int:page_num>", methods=['POST'])
+def save(identifier, page_num):
+    page = get_page(identifier, page_num)
+    edits = defaultdict(lambda: defaultdict(unicode))
+    for k, replacement in request.form.iteritems():
         if not k.startswith('word_'):
             continue
         line, char = map(int, k.split('_')[1:])
-        edits.append((identifier, page, line, char, v))
-    for e in sorted(edits):
-        print e
+        edits[line][char] = replacement
+
+    abbyy = get_page_lines(page)
+
+    print (identifier, page_num)
+    to_save = []
+    for line_num, (l, b, line) in enumerate(abbyy['lines']):
+        if line_num not in edits:
+            continue
+        chars = []
+        for fmt in line:
+            for word in group_words(fmt):
+                char_offset = int(word[0].get('char_offset'))
+                if char_offset not in edits[line_num]:
+                    continue
+                old_word = ''.join(c.text for c in word)
+                new_word = edits[line_num][char_offset]
+                print (line_num, char_offset, ''.join(c.text for c in word), edits[line_num][char_offset])
+                to_save.append({
+                    'line': line_num,
+                    'char_start': char_offset,
+                    'old_word': old_word,
+                    'new_word': new_word,
+                    'l': word[0].get('l'),
+                    't': line.get('t'),
+                    'r': word[-1].get('r'),
+                    'b': line.get('b'),
+                })
+
+    cur = g.db.cursor(MySQLdb.cursors.DictCursor)
+    for edit in to_save:
+        keys = ','.join(edit.keys())
+        cur.execute('insert into edits (user_id, identifier, page, %s) values (%s)' % (keys, ','.join(['%s'] * (3 + len(edit)))), [session['user_id'], identifier, page_num] + edit.values())
     return ''
 
 ns = '{http://www.abbyy.com/FineReader_xml/FineReader6-schema-v1.xml}'
 page_tag = ns + 'page'
+
+@app.route('/leaders')
+def leaders():
+    return render_template('leaders.html')
+
+@app.route("/logout")
+def logout():
+    for f in 'user_id', 'username', 'site':
+        if f in session:
+            del session[f]
+    return redirect(request.referrer or url_for('index'))
+
+@app.route("/do_login", methods=['POST'])
+def do_login():
+    username = request.form['username']
+    password = request.form['password']
+    for f in 'user_id', 'username', 'site':
+        if f in session:
+            del session[f]
+    site = None
+    if ol_login(username, password):
+        site = 'ol'
+    elif ia_login(username, password):
+        site = 'ia'
+    if site:
+        session['username'] = username
+        session['site'] = site
+        cur = g.db.cursor(MySQLdb.cursors.DictCursor)
+        cur.execute('select id from users where site=%s and username=%s', [site, username])
+        row = cur.fetchone()
+        if row:
+            session['user_id'] = row['id']
+        else:
+            cur.execute('insert into users (site, username) values (%s, %s)', [site, username])
+            session['user_id'] = g.db.insert_id()
+        return 'good'
+    return 'bad'
 
 @app.route("/view/<identifier>")
 def view(identifier):
