@@ -132,6 +132,7 @@ def user(username):
 def get_page(identifier, leaf_num):
     host, path = locate(identifier)
     url = 'http://%s/~edward/get_leaf.php?item_id=%s&doc=%s&path=%s&leaf=%d' % (host, identifier, identifier, path, leaf_num)
+    print url
     return etree.parse(url).getroot()
 
 def get_page_lines(page):
@@ -162,8 +163,17 @@ def get_page_lines(page):
 
 @app.route("/leaf/<identifier>/<int:leaf_num>")
 def leaf(identifier, leaf_num):
+    cur = g.db.cursor(MySQLdb.cursors.DictCursor)
+    cur.execute('select edits.* from changesets, edits where changeset=changesets.id and page=%s and identifier=%s', [leaf_num, identifier])
+    edits = {}
+    for edit in cur.fetchall():
+        word_id = 'word_%d_%d' % (edit['line'], edit['char_start'])
+        edits[word_id] = edit
+    pprint(edits)
+
     item = get_item(identifier)
-    page = get_page(identifier, leaf_num)
+    print (item['leaf0_missing'], leaf_num)
+    page = get_page(identifier, leaf_num if item['leaf0_missing'] else leaf_num + 1)
     page_w = int(page.get('width'))
     abbyy = get_page_lines(page)
 
@@ -171,7 +181,7 @@ def leaf(identifier, leaf_num):
     text_l = abbyy['text_l']
     text_w = text_r-text_l if (text_r is not None and text_l is not None) else 0
     return render_template('leaf.html', item=item, leaf=leaf_num, lines=abbyy['lines'], \
-            page_w=page_w, int=int, Decimal=Decimal, \
+            page_w=page_w, int=int, Decimal=Decimal, edits=edits, \
             text_x=text_l, text_w=text_w, group_words=group_words, max=max, len=len)
 
 def get_item(identifier):

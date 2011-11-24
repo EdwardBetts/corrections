@@ -1,12 +1,4 @@
-<html>
-<head>
-<title>Corrections</title>
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.0/jquery.min.js"></script>
-</head>
-<body>
-<h1>Corrections</h1>
-<a href="{{ url_for('index') }}">home</a> |
-{% include 'account.html' %}
+{% include 'head.html' %}
 
 {{ item }} <p>
 {% set offset = int(request.args.get('offset', 0)) %}
@@ -14,8 +6,7 @@
 <a href="{{ url_for('item', identifier=item.identifier)}}?offset={{offset + 20}}">Next</a><p>
 
 {% for n in range(offset, offset+20) %}
-{% set leaf = (n + 1 if item.leaf0_missing else n) %}
-<a href="{{url_for('leaf', identifier=item.identifier, leaf_num=leaf)}}"><img src="http://www.archive.org/download/{{ item.identifier }}/page/n{{n}}_w200.jpg" width="200"></a> 
+<a href="{{url_for('leaf', identifier=item.identifier, leaf_num=n)}}"><img src="http://www.archive.org/download/{{ item.identifier }}/page/n{{n}}_w200.jpg" width="200"></a> 
 {% endfor %}
 
 </body>

@@ -1,18 +1,36 @@
 <html>
 <head>
 <title>Corrections</title>
+<link rel="Stylesheet" href="{{url_for('static', filename='style.css')}}">
 </head>
 <body>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.0/jquery.min.js"></script>
 <script>
+var selected_box = null;
 $(function () {
-    $("span.word").click(function () {
+    $("span.wordbox").click(function () {
+        if (this == selected_box) { 
+            return;
+        }
+        selected_box = this;
+        var cur_word = $(this).children('.word');
+        $('input').each(function () {
+            var word = $(this).val();
+            if (word == $(this).attr('orig')) {
+                $(this).parent().children().show();
+            } else {
+                $(this).parent().children('.word').css('background', 'lightgreen').show().empty().text(word);
+            }
+            $(this).remove();
+        })
         var input = $("<input />");
-        input.width(Math.max(14, $(this).parent().width()));
-        input.val($(this).text());
+        input.width(Math.max(14, cur_word.parent().width()));
+        var orig = cur_word.text().replace(/ /g,'');
+        input.val(orig);
+        input.attr('orig', orig);
         input.keydown(function() { $('#saveButton').removeAttr('disabled') });
-        input.attr('id', $(this).attr('id'));
-        $(this).replaceWith(input);
+        input.attr('id', 'input_' + cur_word.attr('id'));
+        cur_word.hide().parent().append(input)
     })
 })
 
@@ -52,9 +70,6 @@ function saveEdits () {
 <img src="http://www.archive.org/download/{{item.identifier}}/page/n{{leaf}}_w250.jpg" width="250" style="position:fixed;top:20px;left:{{(text_w / scale) + 20}}px">
 
 {% set out_y = 40 %}
-{% if not item.leaf0_missing %}
-{% set leaf = leaf - 1 %}
-{% endif %}
 {% for t, b, line in lines %}
     {% set line_offset = loop.index0 %}
     {% set y = t - 20 %}
@@ -68,12 +83,17 @@ function saveEdits () {
             {%- if word[0].text != ' ' -%}
                 {%- set w = (int(word[-1].get('r')) - int(word[0].get('l'))) / scale -%}
                 {%- set word_x = int(word[0].get('l')) - text_x -%}
-                <span style="position:absolute;left:{{word_x / scale}}px;height:{{(b - t) / 2 }}px;width:{{w}}px;border:red 1px solid;">
-                <span class="word" id="word_{{ line_offset }}_{{ word[0].get('char_offset') }}">
-                {%- for c in word -%}
-                    {%- set char_w = (int(c.get('r')) - int(c.get('l'))) / scale -%}
-                    <span style="position:absolute;left:{{((int(c.get('l')) - text_x) - word_x) / scale}}px;width:{{char_w}}px">{{c.text}}</span>
-                {%- endfor -%}
+                <span class="wordbox" style="position:absolute;left:{{word_x / scale}}px;height:{{(b - t) / 2 }}px;width:{{w}}px;border:red 1px solid;">
+                {%- set word_id = "word_%d_%s" % (line_offset, word[0].get('char_offset')) -%}
+                <span class="word" id="{{ word_id }}">
+                {%- if word_id in edits -%}
+                    {{- edits[word_id].new_word -}}
+                {%- else -%}
+                    {%- for c in word -%}
+                        {%- set char_w = (int(c.get('r')) - int(c.get('l'))) / scale -%}
+                        <span style="position:absolute;left:{{((int(c.get('l')) - text_x) - word_x) / scale}}px;width:{{char_w}}px">{{c.text}}</span>
+                    {%- endfor -%}
+                {%- endif -%}
                 </span>
                 </span>
             {%- endif -%}
