@@ -131,8 +131,7 @@ def user(username):
 
 def get_page(identifier, leaf_num):
     host, path = locate(identifier)
-    url = 'http://%s/~edward/get_leaf.php?item_id=%s&doc=%s&path=%s&leaf=%d' % (host, identifier, identifier, path, leaf_num)
-    print url
+    url = 'http://%s/fulltext/get_leaf.php?item_id=%s&doc=%s&path=%s&leaf=%d' % (host, identifier, identifier, path, leaf_num)
     return etree.parse(url).getroot()
 
 def get_page_lines(page):
@@ -169,10 +168,10 @@ def leaf(identifier, leaf_num):
     for edit in cur.fetchall():
         word_id = 'word_%d_%d' % (edit['line'], edit['char_start'])
         edits[word_id] = edit
-    pprint(edits)
+    #pprint(edits)
 
     item = get_item(identifier)
-    print (item['leaf0_missing'], leaf_num)
+    #print (item['leaf0_missing'], leaf_num)
     page = get_page(identifier, leaf_num if item['leaf0_missing'] else leaf_num + 1)
     page_w = int(page.get('width'))
     abbyy = get_page_lines(page)
@@ -211,7 +210,7 @@ def match_edits_to_page(edits, page):
                     continue
                 old_word = ''.join(c.text for c in word)
                 new_word = edits[line_num][char_offset]
-                print (line_num, char_offset, ''.join(c.text for c in word), edits[line_num][char_offset])
+                #print (line_num, char_offset, ''.join(c.text for c in word), edits[line_num][char_offset])
                 to_save.append({
                     'line': line_num,
                     'char_start': char_offset,
