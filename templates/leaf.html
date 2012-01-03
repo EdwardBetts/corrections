@@ -67,14 +67,14 @@ function saveEdits () {
 </div>
 
 {% set scale = 2 %}
-<img src="http://www.archive.org/download/{{item.identifier}}/page/n{{leaf}}_w250.jpg" width="250" style="position:fixed;top:20px;left:{{(text_w / scale) + 20}}px">
+<img src="http://www.archive.org/download/{{item.identifier}}/page/leaf{{leaf}}_w250.jpg" width="250" style="position:fixed;top:20px;left:{{(text_w / scale) + 20}}px">
 
 {% set out_y = 40 %}
 {% for t, b, line in lines %}
     {% set line_offset = loop.index0 %}
     {% set y = t - 20 %}
     {% set h = (b - t) + 40 %}
-    <img src="http://www.archive.org/download/{{item.identifier}}/page/n{{leaf}}_x{{text_x}}_y{{y}}_h{{h}}_w{{text_w}}_s{{scale}}.jpg" height="{{h/scale}}" width="{{text_w/scale}}" style="position:absolute;top:{{out_y}}px;">
+    <img src="http://www.archive.org/download/{{item.identifier}}/page/leaf{{leaf}}_x{{text_x}}_y{{y}}_h{{h}}_w{{text_w}}_s{{scale}}.jpg" height="{{h/scale}}" width="{{text_w/scale}}" style="position:absolute;top:{{out_y}}px;">
     <div style="position:absolute;top:{{ out_y + 10 + h/scale}}px;height:{{h/scale}}px;">
     {% for fmt in line %}
         {% set fs = max([9, (Decimal('3.5') * Decimal(fmt.get('fs'))) /scale]) %}
