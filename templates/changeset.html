@@ -1,0 +1,16 @@
+<html>
+<head>
+<title>Corrections</title>
+</head>
+<body>
+<h1>Corrections</h1>
+
+{{changeset}}<p>
+
+{% for edit in edits %}
+{{ edit.line }}<br>
+{{ edit }}<br>
+{% endfor %}
+
+</body>
+</html>

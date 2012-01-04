@@ -117,7 +117,7 @@ def index(error=None):
 def view_changeset(changeset_id):
     cur = g.db.cursor(MySQLdb.cursors.DictCursor)
     cur.execute('select * from changesets where id=%s', [changeset_id])
-    changeset = cur.fetchrow()
+    changeset = cur.fetchone()
     cur.execute('select * from edits where changeset=%s', [changeset_id])
     edits = cur.fetchall()
     return render_template('changeset.html', changeset=changeset, edits=edits)
